@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>tiny tasks 🌿</title>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Fraunces:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --sage: #a8b89a;
+  --sage-light: #e8efe4;
+  --sage-dark: #5a7050;
+  --cream: #faf8f3;
+  --cream-dark: #f0ece1;
+  --tan: #d4c9b0;
+  --tan-dark: #8a7d64;
+  --rust: #c4704a;
+  --rust-light: #f5e8e0;
+  --sky: #8bb4c8;
+  --sky-light: #e4eff5;
+  --blush: #d4929a;
+  --blush-light: #f5e8ea;
+  --text: #3a3528;
+  --text-muted: #7a7260;
+  --text-hint: #b0a898;
+  --border: rgba(90,112,80,0.15);
+  --border-hover: rgba(90,112,80,0.3);
+  --shadow: 0 2px 16px rgba(58,53,40,0.08);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --radius-pill: 100px;
+}
+
+body {
+  font-family: 'Quicksand', sans-serif;
+  background: var(--cream);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 0;
+}
+
+/* layout */
+.layout { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 300px; flex-shrink: 0;
+  background: #f0ece0;
+  border-right: 1px solid var(--tan);
+  padding: 1.5rem 1.25rem;
+  display: flex; flex-direction: column; gap: 1.25rem;
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+}
+.main { flex: 1; padding: 1.75rem 2rem; max-width: 600px; }
+
+/* sidebar header */
+.app-title { font-family: 'Fraunces', serif; font-size: 22px; color: var(--sage-dark); font-weight: 600; }
+.app-subtitle { font-size: 12px; color: var(--text-muted); font-weight: 500; margin-top: 2px; }
+
+/* active pet card */
+.active-pet-card {
+  background: var(--sage-light);
+  border: 1px solid rgba(90,112,80,0.2);
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+.active-pet-label { font-size: 11px; font-weight: 700; color: var(--sage-dark); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 8px; }
+.pet-display { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.pet-emoji { font-size: 52px; line-height: 1; display: block; transition: transform 0.3s; cursor: default; }
+.pet-emoji:hover { transform: scale(1.1) rotate(-5deg); }
+.pet-name { font-family: 'Fraunces', serif; font-size: 16px; color: var(--sage-dark); font-weight: 600; }
+.pet-mood { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+
+/* stat bars */
+.stat-bars { display: flex; flex-direction: column; gap: 7px; margin-top: 6px; width: 100%; }
+.stat-row { display: flex; align-items: center; gap: 8px; }
+.stat-icon { font-size: 14px; width: 18px; text-align: center; }
+.stat-track { flex: 1; height: 7px; background: rgba(90,112,80,0.15); border-radius: 4px; overflow: hidden; }
+.stat-fill { height: 100%; border-radius: 4px; transition: width 0.5s cubic-bezier(.4,0,.2,1); }
+.stat-fill.hunger { background: linear-gradient(to right, #c4704a, #e8a882); }
+.stat-fill.thirst { background: linear-gradient(to right, #5a9ab5, #8bb4c8); }
+.stat-fill.happy { background: linear-gradient(to right, #d4929a, #e8b4ba); }
+.stat-val { font-size: 11px; font-weight: 700; color: var(--text-muted); min-width: 26px; text-align: right; }
+
+/* feed buttons */
+.feed-section { margin-top: 8px; }
+.feed-label { font-size: 11px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 7px; }
+.food-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.food-btn {
+  background: var(--cream); border: 1px solid var(--tan);
+  border-radius: var(--radius-sm); padding: 8px 6px;
+  font-family: 'Quicksand', sans-serif; font-size: 12px; font-weight: 600;
+  color: var(--text-muted); cursor: pointer; text-align: center;
+  transition: all 0.15s; display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.food-btn:hover:not(:disabled) { background: var(--cream-dark); border-color: var(--tan-dark); color: var(--text); transform: translateY(-1px); }
+.food-btn:disabled { opacity: 0.38; cursor: not-allowed; }
+.food-btn .food-emoji { font-size: 20px; }
+.food-btn .food-count { font-size: 10px; color: var(--text-hint); }
+.food-btn.water-btn { grid-column: span 2; flex-direction: row; gap: 6px; justify-content: center; }
+
+/* inventory */
+.inventory-section {}
+.inv-label { font-size: 11px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 8px; }
+.inv-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.inv-pet {
+  background: var(--cream); border: 1.5px solid var(--tan);
+  border-radius: var(--radius-sm); padding: 8px 4px;
+  text-align: center; cursor: pointer; transition: all 0.15s;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.inv-pet:hover { border-color: var(--sage); background: var(--sage-light); transform: scale(1.04); }
+.inv-pet.selected { border-color: var(--sage-dark); background: var(--sage-light); }
+.inv-pet.locked { opacity: 0.35; cursor: default; filter: grayscale(1); }
+.inv-pet .inv-emoji { font-size: 24px; }
+.inv-pet .inv-name { font-size: 9px; font-weight: 600; color: var(--text-muted); }
+.unlock-hint { font-size: 11px; color: var(--text-hint); font-weight: 500; text-align: center; margin-top: 4px; }
+
+/* timer widget */
+.timer-card {
+  background: var(--cream);
+  border: 1px solid var(--tan);
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+.timer-label { font-size: 11px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 10px; }
+.timer-display {
+  font-family: 'Fraunces', serif; font-size: 36px; font-weight: 600;
+  color: var(--sage-dark); text-align: center; letter-spacing: 2px; margin-bottom: 10px;
+}
+.timer-display.running { color: var(--rust); animation: pulse 1s ease-in-out infinite; }
+.timer-display.done { color: var(--blush); }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.7} }
+.timer-set-row { display: flex; gap: 5px; align-items: center; justify-content: center; margin-bottom: 10px; }
+.time-inp {
+  width: 48px; text-align: center;
+  border: 1px solid var(--tan); border-radius: var(--radius-sm);
+  padding: 5px 4px; font-size: 14px; font-family: 'Quicksand', sans-serif; font-weight: 600;
+  background: var(--cream-dark); color: var(--text); outline: none;
+}
+.time-inp:focus { border-color: var(--sage); }
+.time-sep { font-size: 18px; font-weight: 700; color: var(--tan-dark); }
+.timer-btns { display: flex; gap: 6px; }
+.tbtn {
+  flex: 1; height: 34px; border-radius: var(--radius-sm);
+  border: 1px solid var(--tan); font-family: 'Quicksand', sans-serif;
+  font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.15s;
+}
+.tbtn.start { background: var(--sage-light); border-color: var(--sage); color: var(--sage-dark); }
+.tbtn.start:hover { background: var(--sage); color: white; }
+.tbtn.stop { background: var(--rust-light); border-color: var(--rust); color: var(--rust); }
+.tbtn.stop:hover { background: var(--rust); color: white; }
+.tbtn.reset { background: var(--cream-dark); color: var(--text-muted); }
+.tbtn.reset:hover { background: var(--tan); }
+
+/* main area */
+.main-header { margin-bottom: 1.5rem; }
+.main-title { font-family: 'Fraunces', serif; font-size: 28px; color: var(--text); font-weight: 600; }
+.main-sub { font-size: 13px; color: var(--text-muted); font-weight: 500; margin-top: 3px; }
+
+/* progress */
+.prog-row { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
+.prog-track { height: 6px; background: var(--cream-dark); border-radius: 3px; overflow: hidden; margin-bottom: 1.25rem; }
+.prog-fill { height: 100%; background: linear-gradient(to right, var(--sage), var(--sky)); border-radius: 3px; transition: width 0.5s cubic-bezier(.4,0,.2,1); }
+
+/* add task */
+.add-row { display: flex; gap: 8px; margin-bottom: 10px; }
+.task-inp {
+  flex: 1; height: 42px;
+  border: 1px solid var(--tan); border-radius: var(--radius-sm);
+  padding: 0 14px; font-size: 14px; font-family: 'Quicksand', sans-serif; font-weight: 500;
+  background: white; color: var(--text); outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.task-inp:focus { border-color: var(--sage); box-shadow: 0 0 0 3px rgba(168,184,154,0.2); }
+.task-inp::placeholder { color: var(--text-hint); }
+.cat-sel {
+  height: 42px; border: 1px solid var(--tan); border-radius: var(--radius-sm);
+  padding: 0 10px; font-family: 'Quicksand', sans-serif; font-size: 13px; font-weight: 600;
+  background: white; color: var(--text); outline: none; cursor: pointer;
+}
+.add-btn {
+  height: 42px; padding: 0 18px; border-radius: var(--radius-sm);
+  border: 1px solid rgba(90,112,80,0.4); background: var(--sage-light);
+  color: var(--sage-dark); font-family: 'Quicksand', sans-serif; font-size: 14px; font-weight: 700;
+  cursor: pointer; white-space: nowrap; transition: all 0.15s;
+}
+.add-btn:hover { background: var(--sage); color: white; }
+
+/* filter pills */
+.pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1.1rem; }
+.pill {
+  font-size: 12px; font-weight: 700; padding: 5px 13px; border-radius: var(--radius-pill);
+  border: 1px solid var(--tan); background: white; color: var(--text-muted);
+  cursor: pointer; font-family: 'Quicksand', sans-serif; transition: all 0.15s;
+}
+.pill.active { background: var(--sage-light); border-color: var(--sage); color: var(--sage-dark); }
+
+/* tasks */
+.tasks { display: flex; flex-direction: column; gap: 8px; }
+.task-item {
+  display: flex; align-items: center; gap: 10px;
+  background: white; border: 1px solid var(--tan);
+  border-radius: var(--radius); padding: 13px 15px;
+  transition: opacity 0.3s, box-shadow 0.2s;
+  animation: slideIn 0.22s ease;
+}
+.task-item:hover { box-shadow: var(--shadow); }
+@keyframes slideIn { from{opacity:0;transform:translateY(-5px)} to{opacity:1;transform:translateY(0)} }
+.task-item.done { opacity: 0.4; }
+.task-item.done .task-txt { text-decoration: line-through; color: var(--text-hint); }
+.chk {
+  width: 24px; height: 24px; border-radius: 50%;
+  border: 1.8px solid var(--tan); background: transparent;
+  cursor: pointer; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+}
+.chk:hover { border-color: var(--sage); }
+.chk.checked { background: var(--sage); border-color: var(--sage); }
+.chk svg { display: none; }
+.chk.checked svg { display: block; }
+.task-txt { flex: 1; font-size: 14px; font-weight: 500; }
+.task-tag { font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: var(--radius-pill); flex-shrink: 0; }
+.tag-work { background: var(--sky-light); color: #2a6080; }
+.tag-personal { background: var(--blush-light); color: #884050; }
+.tag-health { background: var(--sage-light); color: var(--sage-dark); }
+.tag-other { background: var(--cream-dark); color: var(--tan-dark); }
+.del-btn {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-hint); font-size: 18px; line-height: 1; flex-shrink: 0;
+  transition: color 0.15s; font-family: 'Quicksand', sans-serif;
+}
+.del-btn:hover { color: var(--rust); }
+.empty { text-align: center; padding: 3rem 0; color: var(--text-hint); font-size: 14px; font-weight: 500; }
+
+/* reward toast */
+.toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: white; border: 1px solid var(--tan);
+  border-radius: var(--radius); padding: 14px 18px;
+  box-shadow: 0 8px 32px rgba(58,53,40,0.15);
+  display: flex; align-items: center; gap: 12px;
+  font-size: 14px; font-weight: 600; color: var(--text);
+  animation: toastIn 0.3s cubic-bezier(.3,1.4,.5,1);
+  z-index: 999; max-width: 280px;
+}
+.toast .toast-icon { font-size: 28px; flex-shrink: 0; }
+.toast-title { font-size: 13px; font-weight: 700; color: var(--sage-dark); }
+.toast-msg { font-size: 12px; color: var(--text-muted); font-weight: 500; margin-top: 1px; }
+@keyframes toastIn { from{opacity:0;transform:translateY(20px) scale(0.9)} to{opacity:1;transform:translateY(0) scale(1)} }
+
+/* confetti */
+.confetti-wrap { position: fixed; inset: 0; pointer-events: none; z-index: 998; }
+.cp { position: absolute; width: 8px; height: 8px; border-radius: 2px; animation: fall linear forwards; }
+@keyframes fall { 0%{opacity:1;transform:translateY(-10px) rotate(0deg)} 100%{opacity:0;transform:translateY(100vh) rotate(720deg)} }
+
+/* timer ring indicator */
+.timer-ring-wrap { display: flex; justify-content: center; margin-bottom: 6px; }
+svg.ring { transform: rotate(-90deg); }
+.ring-bg { fill: none; stroke: var(--cream-dark); stroke-width: 5; }
+.ring-fill { fill: none; stroke: var(--sage); stroke-width: 5; stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+.ring-fill.running { stroke: var(--rust); }
+.ring-fill.done { stroke: var(--blush); }
+
+/* responsive */
+@media (max-width: 700px) {
+  .layout { flex-direction: column; }
+  .sidebar { width: 100%; height: auto; position: static; }
+  .main { padding: 1.25rem 1rem; }
+}
+</style>
+</head>
+<body>
+
+<div class="confetti-wrap" id="confetti-wrap"></div>
+<div id="toast-container"></div>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div>
+      <div class="app-title">tiny tasks</div>
+      <div class="app-subtitle">complete tasks → care for your pets 🌿</div>
+    </div>
+
+    <!-- Active Pet -->
+    <div class="active-pet-card">
+      <div class="active-pet-label">active pet</div>
+      <div class="pet-display">
+        <span class="pet-emoji" id="active-emoji">🐹</span>
+        <div class="pet-name" id="active-name">Pebble</div>
+        <div class="pet-mood" id="active-mood">feeling cozy ✨</div>
+        <div class="stat-bars" id="stat-bars">
+          <div class="stat-row">
+            <span class="stat-icon">🍎</span>
+            <div class="stat-track"><div class="stat-fill hunger" id="bar-hunger" style="width:80%"></div></div>
+            <span class="stat-val" id="val-hunger">80</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-icon">💧</span>
+            <div class="stat-track"><div class="stat-fill thirst" id="bar-thirst" style="width:65%"></div></div>
+            <span class="stat-val" id="val-thirst">65</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-icon">💛</span>
+            <div class="stat-track"><div class="stat-fill happy" id="bar-happy" style="width:90%"></div></div>
+            <span class="stat-val" id="val-happy">90</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feed -->
+    <div>
+      <div class="feed-label">food supply</div>
+      <div class="food-grid" id="food-grid">
+        <button class="food-btn" id="btn-food" onclick="feedPet('food')">
+          <span class="food-emoji">🍎</span>
+          <span>snack</span>
+          <span class="food-count" id="cnt-food">×0</span>
+        </button>
+        <button class="food-btn" id="btn-treat" onclick="feedPet('treat')">
+          <span class="food-emoji">🍪</span>
+          <span>treat</span>
+          <span class="food-count" id="cnt-treat">×0</span>
+        </button>
+        <button class="food-btn water-btn" id="btn-water" onclick="feedPet('water')">
+          <span class="food-emoji">💧</span>
+          <span>water</span>
+          <span class="food-count" id="cnt-water">×0</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Timer -->
+    <div class="timer-card">
+      <div class="timer-label">focus timer</div>
+      <div class="timer-ring-wrap">
+        <svg class="ring" width="70" height="70" viewBox="0 0 70 70">
+          <circle class="ring-bg" cx="35" cy="35" r="30"/>
+          <circle class="ring-fill" id="ring-fill" cx="35" cy="35" r="30" stroke-dasharray="188.5" stroke-dashoffset="0"/>
+        </svg>
+      </div>
+      <div class="timer-display" id="timer-display">00:00</div>
+      <div class="timer-set-row">
+        <input class="time-inp" id="t-hr" type="number" min="0" max="23" value="0" placeholder="hh" />
+        <span class="time-sep">:</span>
+        <input class="time-inp" id="t-min" type="number" min="0" max="59" value="25" placeholder="mm" />
+        <span class="time-sep">:</span>
+        <input class="time-inp" id="t-sec" type="number" min="0" max="59" value="0" placeholder="ss" />
+      </div>
+      <div class="timer-btns">
+        <button class="tbtn start" id="tbtn-start" onclick="timerStart()">start</button>
+        <button class="tbtn stop" id="tbtn-stop" onclick="timerStop()" style="display:none">pause</button>
+        <button class="tbtn reset" onclick="timerReset()">reset</button>
+      </div>
+    </div>
+
+    <!-- Inventory -->
+    <div>
+      <div class="inv-label">my pets</div>
+      <div class="inv-grid" id="inv-grid"></div>
+      <div class="unlock-hint" id="unlock-hint"></div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="main-header">
+      <div class="main-title">today's tasks</div>
+      <div class="main-sub" id="main-sub">complete tasks to earn food & care for your pets</div>
+    </div>
+
+    <div class="prog-row">
+      <span id="prog-label">0 of 0 done</span>
+      <span id="prog-pct">0%</span>
+    </div>
+    <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+
+    <div class="add-row">
+      <input class="task-inp" id="task-inp" placeholder="what do you need to do?" />
+      <select class="cat-sel" id="cat-sel">
+        <option value="work">work</option>
+        <option value="personal">personal</option>
+        <option value="health">health</option>
+        <option value="other">other</option>
+      </select>
+      <button class="add-btn" onclick="addTask()">+ add</button>
+    </div>
+
+    <div class="pills" id="pills">
+      <button class="pill active" onclick="setFilter('all',this)">all</button>
+      <button class="pill" onclick="setFilter('work',this)">work</button>
+      <button class="pill" onclick="setFilter('personal',this)">personal</button>
+      <button class="pill" onclick="setFilter('health',this)">health</button>
+      <button class="pill" onclick="setFilter('other',this)">other</button>
+    </div>
+
+    <div class="tasks" id="task-list"></div>
+  </main>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────
+const ALL_PETS = [
+  { id: 'hamster',  emoji: '🐹', name: 'Pebble',   unlock: 0  },
+  { id: 'bunny',    emoji: '🐰', name: 'Mochi',    unlock: 5  },
+  { id: 'frog',     emoji: '🐸', name: 'Ripple',   unlock: 12 },
+  { id: 'hedgehog', emoji: '🦔', name: 'Pinecone', unlock: 20 },
+  { id: 'panda',    emoji: '🐼', name: 'Dumpling', unlock: 32 },
+  { id: 'fox',      emoji: '🦊', name: 'Ember',    unlock: 46 },
+  { id: 'bear',     emoji: '🐨', name: 'Cloud',    unlock: 64 },
+  { id: 'cat',      emoji: '🐱', name: 'Biscuit',  unlock: 85 },
+  { id: 'duck',     emoji: '🐥', name: 'Waffles',  unlock: 110},
+];
+
+const MOODS = [
+  { min:80, text:'thriving! 🌟' },
+  { min:60, text:'feeling cozy ✨' },
+  { min:40, text:'a little hungry 🍃' },
+  { min:20, text:'needs attention 💤' },
+  { min:0,  text:'please feed me 😢' },
+];
+
+function defaultState() {
+  return {
+    tasks: [],
+    filter: 'all',
+    totalDone: 0,
+    supplies: { food: 0, treat: 0, water: 0 },
+    activePet: 'hamster',
+    pets: {
+      hamster:  { hunger:75, thirst:70, happy:80 },
+    },
+  };
+}
+
+let S = (() => {
+  try { return JSON.parse(localStorage.getItem('tinytasks-v2') || 'null') || defaultState(); }
+  catch { return defaultState(); }
+})();
+
+function save() { localStorage.setItem('tinytasks-v2', JSON.stringify(S)); }
+
+// ── TIMER ──────────────────────────────────────────────────
+let timerTotal = 0, timerLeft = 0, timerRunning = false, timerTick = null;
+
+function timerStart() {
+  if (!timerRunning) {
+    if (timerLeft === 0) {
+      const h = parseInt(document.getElementById('t-hr').value) || 0;
+      const m = parseInt(document.getElementById('t-min').value) || 0;
+      const sc = parseInt(document.getElementById('t-sec').value) || 0;
+      timerTotal = h*3600 + m*60 + sc;
+      timerLeft = timerTotal;
+      if (timerTotal === 0) return;
+    }
+    timerRunning = true;
+    document.getElementById('tbtn-start').style.display = 'none';
+    document.getElementById('tbtn-stop').style.display = '';
+    timerTick = setInterval(timerStep, 1000);
+    renderTimer();
+  }
+}
+function timerStop() {
+  timerRunning = false;
+  clearInterval(timerTick);
+  document.getElementById('tbtn-start').style.display = '';
+  document.getElementById('tbtn-stop').style.display = 'none';
+  renderTimer();
+}
+function timerReset() {
+  timerStop();
+  timerLeft = 0; timerTotal = 0;
+  const disp = document.getElementById('timer-display');
+  disp.className = 'timer-display';
+  disp.textContent = '00:00';
+  document.getElementById('ring-fill').style.strokeDashoffset = '0';
+  document.getElementById('ring-fill').className = 'ring-fill';
+}
+function timerStep() {
+  timerLeft--;
+  if (timerLeft <= 0) {
+    timerLeft = 0;
+    timerStop();
+    document.getElementById('timer-display').className = 'timer-display done';
+    document.getElementById('ring-fill').className = 'ring-fill done';
+    showToast('⏰', 'focus session done!', 'great work — take a little break');
+    // reward a water for completing a session
+    S.supplies.water = (S.supplies.water || 0) + 1;
+    save(); renderFoodBtns();
+  }
+  renderTimer();
+}
+function renderTimer() {
+  const h = Math.floor(timerLeft / 3600);
+  const m = Math.floor((timerLeft % 3600) / 60);
+  const s = timerLeft % 60;
+  const disp = document.getElementById('timer-display');
+  disp.textContent = h > 0
+    ? `${pad(h)}:${pad(m)}:${pad(s)}`
+    : `${pad(m)}:${pad(s)}`;
+  if (timerRunning) disp.className = 'timer-display running';
+  const pct = timerTotal > 0 ? timerLeft / timerTotal : 0;
+  const circ = 188.5;
+  document.getElementById('ring-fill').style.strokeDashoffset = circ * pct;
+  if (timerRunning) document.getElementById('ring-fill').className = 'ring-fill running';
+}
+function pad(n) { return String(n).padStart(2,'0'); }
+
+// ── TASKS ──────────────────────────────────────────────────
+function addTask() {
+  const inp = document.getElementById('task-inp');
+  const cat = document.getElementById('cat-sel').value;
+  const text = inp.value.trim();
+  if (!text) return;
+  S.tasks.unshift({ id: Date.now(), text, cat, done: false });
+  inp.value = ''; save(); renderTasks();
+}
+document.getElementById('task-inp').addEventListener('keydown', e => { if (e.key === 'Enter') addTask(); });
+
+function deleteTask(id) {
+  S.tasks = S.tasks.filter(t => t.id !== id);
+  save(); renderTasks();
+}
+
+function toggleTask(id) {
+  const t = S.tasks.find(t => t.id === id);
+  if (!t) return;
+  const wasDone = t.done;
+  t.done = !t.done;
+  if (!wasDone && t.done) {
+    S.totalDone++;
+    // grant supplies based on category
+    const rewards = { work: 'food', personal: 'treat', health: 'water', other: 'food' };
+    const rType = rewards[t.cat] || 'food';
+    S.supplies[rType] = (S.supplies[rType] || 0) + 1;
+    // also give a treat every 5 tasks
+    if (S.totalDone % 5 === 0) {
+      S.supplies.treat = (S.supplies.treat || 0) + 1;
+    }
+    save();
+    spawnConfetti();
+    const rewardEmoji = { food:'🍎', treat:'🍪', water:'💧' }[rType];
+    showToast(rewardEmoji, 'task done!', `you earned a ${rType} for ${getActivePet().name}!`);
+    checkUnlocks();
+    renderFoodBtns();
+  }
+  save(); renderTasks(); renderProgress();
+}
+
+function setFilter(f, btn) {
+  S.filter = f;
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  renderTasks();
+}
+
+function renderTasks() {
+  const list = document.getElementById('task-list');
+  const visible = S.filter === 'all' ? S.tasks : S.tasks.filter(t => t.cat === S.filter);
+  if (!visible.length) {
+    list.innerHTML = '<div class="empty">no tasks yet — add one above!</div>';
+  } else {
+    list.innerHTML = visible.map(t => `
+      <div class="task-item ${t.done?'done':''}">
+        <button class="chk ${t.done?'checked':''}" onclick="toggleTask(${t.id})">
+          <svg width="12" height="10" viewBox="0 0 12 10" fill="none">
+            <polyline points="1.5,5 4.5,8 10.5,2" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <span class="task-txt">${escHtml(t.text)}</span>
+        <span class="task-tag tag-${t.cat}">${t.cat}</span>
+        <button class="del-btn" onclick="deleteTask(${t.id})">×</button>
+      </div>
+    `).join('');
+  }
+  renderProgress();
+}
+
+function renderProgress() {
+  const total = S.tasks.length;
+  const done = S.tasks.filter(t => t.done).length;
+  const pct = total ? Math.round(done/total*100) : 0;
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-pct').textContent = pct + '%';
+  document.getElementById('prog-label').textContent = `${done} of ${total} done`;
+}
+
+// ── PETS ──────────────────────────────────────────────────
+function getActivePet() { return ALL_PETS.find(p => p.id === S.activePet); }
+function getStats() { return S.pets[S.activePet] || { hunger:50, thirst:50, happy:50 }; }
+
+function feedPet(type) {
+  if ((S.supplies[type] || 0) <= 0) return;
+  S.supplies[type]--;
+  const stats = getStats();
+  if (type === 'food')  { stats.hunger = Math.min(100, stats.hunger + 25); stats.happy = Math.min(100, stats.happy + 5); }
+  if (type === 'treat') { stats.happy  = Math.min(100, stats.happy  + 30); stats.hunger = Math.min(100, stats.hunger + 10); }
+  if (type === 'water') { stats.thirst = Math.min(100, stats.thirst + 30); }
+  S.pets[S.activePet] = stats;
+  save(); renderPet(); renderFoodBtns();
+  const pet = getActivePet();
+  const msgs = { food:`${pet.name} loved the snack! 🍎`, treat:`${pet.name} is so happy! 🍪`, water:`${pet.name} is refreshed! 💧` };
+  showToast(type==='food'?'🍎':type==='treat'?'🍪':'💧', 'feeding time!', msgs[type]);
+}
+
+function renderPet() {
+  const pet = getActivePet();
+  const stats = getStats();
+  document.getElementById('active-emoji').textContent = pet.emoji;
+  document.getElementById('active-name').textContent = pet.name;
+  const avg = (stats.hunger + stats.thirst + stats.happy) / 3;
+  const mood = MOODS.find(m => avg >= m.min);
+  document.getElementById('active-mood').textContent = mood ? mood.text : 'needs love 💤';
+  document.getElementById('bar-hunger').style.width  = stats.hunger + '%';
+  document.getElementById('bar-thirst').style.width  = stats.thirst + '%';
+  document.getElementById('bar-happy').style.width   = stats.happy  + '%';
+  document.getElementById('val-hunger').textContent  = Math.round(stats.hunger);
+  document.getElementById('val-thirst').textContent  = Math.round(stats.thirst);
+  document.getElementById('val-happy').textContent   = Math.round(stats.happy);
+}
+
+function renderFoodBtns() {
+  const s = S.supplies;
+  document.getElementById('cnt-food').textContent  = '×' + (s.food  || 0);
+  document.getElementById('cnt-treat').textContent = '×' + (s.treat || 0);
+  document.getElementById('cnt-water').textContent = '×' + (s.water || 0);
+  document.getElementById('btn-food').disabled  = (s.food  || 0) <= 0;
+  document.getElementById('btn-treat').disabled = (s.treat || 0) <= 0;
+  document.getElementById('btn-water').disabled = (s.water || 0) <= 0;
+}
+
+function renderInventory() {
+  const grid = document.getElementById('inv-grid');
+  grid.innerHTML = ALL_PETS.map(p => {
+    const unlocked = S.totalDone >= p.unlock;
+    const selected = S.activePet === p.id;
+    return `<div class="inv-pet ${unlocked?'':'locked'} ${selected?'selected':''}"
+      onclick="${unlocked?`selectPet('${p.id}')`:''}">
+      <span class="inv-emoji">${p.emoji}</span>
+      <span class="inv-name">${unlocked ? p.name : '?'}</span>
+    </div>`;
+  }).join('');
+  // next unlock hint
+  const next = ALL_PETS.find(p => S.totalDone < p.unlock);
+  if (next) {
+    const left = next.unlock - S.totalDone;
+    document.getElementById('unlock-hint').textContent = `${left} more task${left!==1?'s':''} to unlock ${next.emoji}`;
+  } else {
+    document.getElementById('unlock-hint').textContent = 'you have all the pets! 🎉';
+  }
+}
+
+function selectPet(id) {
+  if (S.totalDone < (ALL_PETS.find(p=>p.id===id)?.unlock||0)) return;
+  S.activePet = id;
+  if (!S.pets[id]) S.pets[id] = { hunger:60, thirst:60, happy:70 };
+  save(); renderPet(); renderInventory();
+}
+
+function checkUnlocks() {
+  const newUnlock = ALL_PETS.find(p => p.unlock === S.totalDone);
+  if (newUnlock) {
+    if (!S.pets[newUnlock.id]) S.pets[newUnlock.id] = { hunger:60, thirst:60, happy:70 };
+    setTimeout(() => {
+      showToast(newUnlock.emoji, 'new pet unlocked!', `say hello to ${newUnlock.name}!`);
+    }, 800);
+    save(); renderInventory();
+  }
+}
+
+// ── DECAY (stats drop slowly over time) ──────────────────
+function decayStats() {
+  for (const id in S.pets) {
+    const st = S.pets[id];
+    st.hunger = Math.max(0, st.hunger - 0.5);
+    st.thirst = Math.max(0, st.thirst - 0.7);
+    st.happy  = Math.max(0, st.happy  - 0.3);
+  }
+  save(); renderPet();
+}
+setInterval(decayStats, 60000); // every minute
+
+// ── CONFETTI ──────────────────────────────────────────────
+function spawnConfetti() {
+  const wrap = document.getElementById('confetti-wrap');
+  const colors = ['#a8b89a','#c4704a','#8bb4c8','#d4929a','#d4c9b0','#5a7050'];
+  for (let i = 0; i < 30; i++) {
+    const el = document.createElement('div');
+    el.className = 'cp';
+    el.style.left = Math.random()*100 + 'vw';
+    el.style.background = colors[Math.floor(Math.random()*colors.length)];
+    el.style.animationDuration = (0.8 + Math.random()*1.2) + 's';
+    el.style.animationDelay = Math.random()*0.3 + 's';
+    wrap.appendChild(el);
+    setTimeout(() => el.remove(), 2200);
+  }
+}
+
+// ── TOAST ─────────────────────────────────────────────────
+let toastTimer = null;
+function showToast(icon, title, msg) {
+  const old = document.getElementById('main-toast');
+  if (old) old.remove();
+  clearTimeout(toastTimer);
+  const el = document.createElement('div');
+  el.className = 'toast'; el.id = 'main-toast';
+  el.innerHTML = `<span class="toast-icon">${icon}</span><div><div class="toast-title">${title}</div><div class="toast-msg">${msg}</div></div>`;
+  document.getElementById('toast-container').appendChild(el);
+  toastTimer = setTimeout(() => el.remove(), 3200);
+}
+
+// ── UTILS ─────────────────────────────────────────────────
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── INIT ──────────────────────────────────────────────────
+renderTasks();
+renderPet();
+renderFoodBtns();
+renderInventory();
+</script>
+</body>
+</html>
